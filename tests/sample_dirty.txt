@@ -1,0 +1,33 @@
+﻿プロジェクト定例会議 議事録
+日時: 2026-02-15 14:00-15:00
+
+参加者:
+  山田太郎 部長 (yamada-taro@example-corp.co.jp)
+  佐藤花子 課長 (sato-hanako@example-corp.co.jp)
+  社員番号: EMP-20451
+
+連絡先: 090-1234-5678
+
+議題1: 新規顧客対応
+  顧客名: 株式会社テスト商事
+  顧客ID: CUST-39201
+  契約番号: CONTRACT-2026-0042
+  取引先コード: VND-8821
+
+議題2: Q1売上報告（社外秘）
+  売上: 3,500万円（前年同期比+12%）
+  営業利益: 850万円
+  budget: $2.5M for Q2
+
+議題3: システム改修
+  DB接続: postgresql://admin:p4ssw0rd@192.168.1.100:5432/proddb
+  API_KEY = sk-abc123def456ghi789
+  GITHUB_TOKEN = ghp_xxxxxxxxxxxxxxxxxxxx
+
+備考:
+  田中部長の携帯: 080-9876-5432
+  生年月日: 1985/03/15
+  住所: 東京都千代田区丸の内1-1-1
+
+Copyright (C) 2026 Example Corp. All Rights Reserved.
+出典: 日経ビジネス 2026年1月号より引用

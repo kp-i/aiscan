@@ -1,0 +1,31 @@
+﻿{
+  "general": [
+    "INDEX.md",
+    "README.md",
+    "BASELINE_DOCS.md"
+  ],
+  "scan": [
+    "policies/scan_rules.yaml",
+    "scripts/scan_content.ps1",
+    "aiscan.ps1"
+  ],
+  "audit": [
+    "scripts/audit_aiscan.ps1",
+    "BASELINE_DOCS.md",
+    "docs/ops/ops_checklist.md"
+  ],
+  "docs": [
+    "docs/README.md",
+    "docs/human/overview.md",
+    "docs/human/overview_ja_quick.md",
+    "docs/human/overview_ja_detailed.md"
+  ],
+  "profile": [
+    "USER_PROFILE.md"
+  ],
+  "tests": [
+    "tests/test_scan.ps1",
+    "tests/sample_dirty.txt",
+    "tests/sample_clean.txt"
+  ]
+}

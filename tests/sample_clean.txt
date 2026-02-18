@@ -1,0 +1,15 @@
+﻿このファイルはクリーンサンプルです。
+一般的なメモとコード断片のみを含みます。
+
+以下は処理例です:
+
+```
+def calculate_total(items):
+    total = 0
+    for item in items:
+        if item.is_active:
+            total += item.price * item.quantity
+    return total
+```
+
+禁止カテゴリに該当する語句や識別子は含めていません。

@@ -1,0 +1,250 @@
+﻿# =============================================================================
+# aiscan - Scan Policy
+# =============================================================================
+# 準拠: 社内AI利用ガイドライン 3.プライバシーとデータセキュリティ
+#
+# ガイドライン原文:
+#   インプットする情報には注意しましょう。以下を含む情報の入力は禁止とします。
+#     - 個人情報（氏名、住所、電話番号など）
+#     - 機密情報や企業秘密
+#     - 取引先や顧客の情報
+#     - 著作権で保護された内容
+#   ※一部ツールや契約プランによってはクローズドな環境で利用できるものもありますが、
+#     上記情報を含めた利用を希望される場合は取締役以上へ上申ください。
+#
+# リスクレベル定義:
+#   BLOCK  - 禁止。検出時は投入不可を強く推奨
+#   WARN   - 警告。文脈次第でNG。確認を推奨
+#   REVIEW - 自動判定不能。人間が判断
+# =============================================================================
+
+version: "1.0.0"
+guideline_ref: "社内AI利用ガイドライン 3.プライバシーとデータセキュリティ"
+
+# =============================================================================
+# カテゴリ1: 個人情報（氏名、住所、電話番号など）
+# =============================================================================
+personal_info:
+  description: "個人情報（氏名、住所、電話番号など）"
+  guideline_clause: "個人情報（氏名、住所、電話番号など）の入力は禁止"
+  default_risk: BLOCK
+
+  rules:
+    - id: PI-001
+      name: email_address
+      description: "メールアドレス"
+      pattern: '[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}'
+      risk: BLOCK
+      examples:
+        - "tanaka@example.co.jp"
+        - "user.name+tag@corp.com"
+
+    - id: PI-002
+      name: phone_jp
+      description: "日本の電話番号（固定・携帯）"
+      pattern: '0[0-9]{1,4}[\s-]?[0-9]{1,4}[\s-]?[0-9]{3,4}'
+      risk: BLOCK
+      examples:
+        - "090-1234-5678"
+        - "03-1234-5678"
+        - "0120-123-456"
+
+    - id: PI-003
+      name: address_jp
+      description: "日本の住所（都道府県から始まるパターン）"
+      pattern: '(?:北海道|東京都|(?:京都|大阪)府|.{2,3}県)\s*\S+[市区町村郡]\S*[0-9]'
+      risk: BLOCK
+      examples:
+        - "東京都千代田区丸の内1-1-1"
+
+    - id: PI-004
+      name: my_number
+      description: "マイナンバー（12桁数字）"
+      pattern: '(?<![0-9])[0-9]{4}\s?[0-9]{4}\s?[0-9]{4}(?![0-9])'
+      risk: BLOCK
+      context_hint: "前後に「マイナンバー」「個人番号」があれば確度UP"
+
+    - id: PI-005
+      name: employee_id
+      description: "社員番号・社員ID"
+      pattern: '(?:社員番号|社員ID|社員No|EMP|emp)[\s:：.\-]*[A-Za-z0-9\-]+'
+      risk: BLOCK
+
+    - id: PI-006
+      name: japanese_name_with_context
+      description: "日本人氏名（敬称・役職付き）"
+      pattern: '[一-龥]{1,4}\s?[一-龥]{1,4}\s*(?:氏|様|さん|殿|先生|部長|課長|係長|主任|社長|取締役|代表|専務|常務|理事|センター長|本部長|室長|チームリーダー|マネージャー|リーダー|担当|主査)'
+      risk: BLOCK
+      note: "敬称・役職なしの漢字列は誤検知が多いため、文脈付きのみ BLOCK"
+
+    - id: PI-007
+      name: japanese_name_bare
+      description: "日本人氏名の可能性（敬称なし・姓名の間にスペース）"
+      pattern: '[一-龥]{1,4}\s[一-龥]{1,4}'
+      risk: WARN
+      note: "一般名詞との誤検知あり。WARN で人間判断を促す"
+
+    - id: PI-008
+      name: date_of_birth
+      description: "生年月日パターン"
+      pattern: '(?:生年月日|DOB|誕生日)[\s:：]*(?:(?:19|20)[0-9]{2}[\s/.\-年][0-9]{1,2}[\s/.\-月][0-9]{1,2}日?|(?:昭和|平成|令和)[0-9]{1,2}年[0-9]{1,2}月[0-9]{1,2}日)'
+      risk: BLOCK
+
+    - id: PI-009
+      name: passport_number
+      description: "パスポート番号"
+      pattern: '(?:パスポート|旅券|passport)[\s:：]*[A-Z]{2}[0-9]{7}'
+      risk: BLOCK
+
+    - id: PI-010
+      name: credit_card
+      description: "クレジットカード番号（16桁）"
+      pattern: '(?<![0-9])[0-9]{4}[\s\-]?[0-9]{4}[\s\-]?[0-9]{4}[\s\-]?[0-9]{4}(?![0-9])'
+      risk: BLOCK
+
+# =============================================================================
+# カテゴリ2: 機密情報や企業秘密
+# =============================================================================
+confidential:
+  description: "機密情報や企業秘密"
+  guideline_clause: "機密情報や企業秘密の入力は禁止"
+  default_risk: BLOCK
+
+  rules:
+    - id: CF-001
+      name: confidential_marking
+      description: "機密区分の明示マーキング"
+      pattern: '(?:社外秘|極秘|部外秘|confidential|internal[\s-]?only|restricted|secret|取扱注意|関係者限り)'
+      risk: BLOCK
+      note: "文書にこのマーキングがある = その文書全体がNG"
+
+    - id: CF-002
+      name: credential_hardcoded
+      description: "ハードコードされた認証情報"
+      pattern: '(?:password|passwd|secret|api[_\-]?key|api[_\-]?token|access[_\-]?key|private[_\-]?key|auth[_\-]?token)\s*[=:]\s*[''"\S]+'
+      risk: BLOCK
+
+    - id: CF-003
+      name: connection_string
+      description: "データベース接続文字列"
+      pattern: '(?:jdbc:|Server=|Data Source=|mongodb(?:\+srv)?://|postgres(?:ql)?://|mysql://)\S+'
+      risk: BLOCK
+
+    - id: CF-004
+      name: env_file_content
+      description: ".env ファイル的なキーバリュー（機密変数名）"
+      pattern: '(?:DB_PASSWORD|DB_HOST|AWS_SECRET|AZURE_KEY|GCP_KEY|SLACK_TOKEN|GITHUB_TOKEN|SECRET_KEY|ENCRYPTION_KEY)\s*=\s*\S+'
+      risk: BLOCK
+
+    - id: CF-005
+      name: financial_data
+      description: "売上・利益・予算などの具体的数値"
+      pattern: '(?:売上|利益|営業利益|経常利益|純利益|原価|予算|年商|月商|粗利)[\s:：]*[0-9,]+(?:\.[0-9]+)?\s*(?:万|億|千万|百万)?円'
+      risk: BLOCK
+
+    - id: CF-006
+      name: financial_data_english
+      description: "英語の財務数値"
+      pattern: '(?:revenue|profit|budget|margin|EBITDA|ARR|MRR)[\s:：]*\$?\s*[0-9,]+(?:\.[0-9]+)?\s*(?:K|M|B|million|billion)?'
+      risk: WARN
+
+    - id: CF-007
+      name: internal_project_code
+      description: "社内プロジェクトコード（典型パターン）"
+      pattern: '(?:プロジェクト|PJ|案件)[\s:：]*(?:コード|code|名|ID)[\s:：]*[A-Z0-9\-_]+'
+      risk: REVIEW
+      note: "コード名だけでは機密度不明。内容とセットで判断"
+
+    - id: CF-008
+      name: ip_address_internal
+      description: "内部IPアドレス（プライベートレンジ）"
+      pattern: '(?:10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|172\.(?:1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3})'
+      risk: WARN
+      note: "インフラ構成情報の漏洩リスク"
+
+# =============================================================================
+# カテゴリ3: 取引先や顧客の情報
+# =============================================================================
+customer_partner:
+  description: "取引先や顧客の情報"
+  guideline_clause: "取引先や顧客の情報の入力は禁止"
+  default_risk: BLOCK
+
+  rules:
+    - id: CP-001
+      name: customer_id
+      description: "顧客ID・顧客番号"
+      pattern: '(?:顧客ID|顧客番号|顧客No|顧客コード|CUST|customer[\s_\-]?(?:id|no|code))[\s:：.\-]*[A-Za-z0-9\-]+'
+      risk: BLOCK
+
+    - id: CP-002
+      name: partner_id
+      description: "取引先ID・取引先コード"
+      pattern: '(?:取引先ID|取引先番号|取引先No|取引先コード|仕入先|vendor[\s_\-]?(?:id|code)|supplier[\s_\-]?(?:id|code))[\s:：.\-]*[A-Za-z0-9\-]+'
+      risk: BLOCK
+
+    - id: CP-003
+      name: contract_info
+      description: "契約番号・契約情報"
+      pattern: '(?:契約番号|契約No|契約ID|contract[\s_\-]?(?:id|no|number))[\s:：.\-]*[A-Za-z0-9\-]+'
+      risk: BLOCK
+
+    - id: CP-004
+      name: customer_name_explicit
+      description: "顧客名・取引先名の明示的記述"
+      pattern: '(?:顧客名|取引先名|クライアント名|得意先|client[\s_]?name)[\s:：]\s*\S+'
+      risk: BLOCK
+
+    - id: CP-005
+      name: nda_reference
+      description: "NDA・秘密保持契約への言及 + 具体情報"
+      pattern: '(?:NDA|秘密保持|守秘義務|機密保持契約)\S*[\s:：]\S+'
+      risk: REVIEW
+      note: "NDA言及自体はOKだが、NDA対象の具体情報がセットなら NG"
+
+    - id: CP-006
+      name: invoice_info
+      description: "請求書番号・発注番号"
+      pattern: '(?:請求書番号|請求No|発注番号|発注No|PO[\s_\-]?(?:number|no|#))[\s:：.\-]*[A-Za-z0-9\-]+'
+      risk: BLOCK
+
+# =============================================================================
+# カテゴリ4: 著作権で保護された内容
+# =============================================================================
+copyright:
+  description: "著作権で保護された内容"
+  guideline_clause: "著作権で保護された内容の入力は禁止"
+  default_risk: REVIEW
+
+  rules:
+    - id: CR-001
+      name: copyright_notice
+      description: "著作権表示の存在"
+      pattern: '(?:Copyright|\(C\)|©|All [Rr]ights [Rr]eserved|著作権|無断転載禁止|転載禁止|複製禁止)'
+      risk: BLOCK
+      note: "この表示がある文書の内容は著作権保護されている可能性が高い"
+
+    - id: CR-002
+      name: license_restricted
+      description: "制限的ライセンス表示"
+      pattern: '(?:All [Rr]ights [Rr]eserved|proprietary|licensed under|使用許諾|利用規約に基づ)'
+      risk: WARN
+
+    - id: CR-003
+      name: book_article_quote
+      description: "書籍・記事からの引用を示す表現"
+      pattern: '(?:より引用|から引用|出典[:：]|引用元[:：]|※本文は.+より抜粋)'
+      risk: REVIEW
+      note: "引用の範囲が適切かは人間が判断"
+
+# =============================================================================
+# 上申ルール（ガイドライン準拠）
+# =============================================================================
+escalation:
+  description: >
+    一部ツールや契約プランによってはクローズドな環境で利用できるものもありますが、
+    上記情報を含めた利用を希望される場合は取締役以上へ上申ください。
+  message: >
+    [要上申] この内容をAIに投入するには、取締役以上への上申が必要です
+    （社内AI利用ガイドライン 3.プライバシーとデータセキュリティ準拠）
+
